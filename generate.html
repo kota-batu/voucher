@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<!--*****************************************************************
+ * PROJECT      : Sistem Voucher V1
+ * MODULE       : Frontend / User QR Portal
+ * FILE         : generate.html
+ * VERSION      : v1.0.0
+ * AUTHOR       : Jimmy Method Team
+ * CREATED      : 2026-09-02
+ * LAST UPDATE  : 2026-09-02
+ *
+ * DESCRIPTION
+ * ----------------------------------------------------------------
+ * Halaman publik hasil scan QR Generator. Tanpa login, boleh
+ * discan berkali-kali oleh siapa saja.
+ ******************************************************************/-->
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ambil Voucher</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+
+  <div class="appContainer">
+    <div class="appTitle">Ambil Voucher</div>
+
+    <div id="generateFormSection">
+      <form id="generateForm">
+        <label class="formLabel" for="inputRecipientName">Nama Penerima (opsional)</label>
+        <input class="formInput" type="text" id="inputRecipientName" />
+
+        <label class="formLabel" for="inputOrganization">Perusahaan/Sekolah (opsional)</label>
+        <input class="formInput" type="text" id="inputOrganization" />
+
+        <button class="formButton" id="buttonGenerateVoucher" type="submit">Ambil Voucher</button>
+      </form>
+    </div>
+
+    <div id="generateStatusMessage" class="statusMessage"></div>
+    <div id="voucherResultSection"></div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/generate.js"></script>
+</body>
+</html>

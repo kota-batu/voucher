@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<!--*****************************************************************
+ * PROJECT      : Sistem Voucher V1
+ * MODULE       : Frontend / Admin App
+ * FILE         : admin.html
+ * VERSION      : v1.0.0
+ * AUTHOR       : Jimmy Method Team
+ * CREATED      : 2026-09-02
+ * LAST UPDATE  : 2026-09-02
+ *
+ * DESCRIPTION
+ * ----------------------------------------------------------------
+ * Halaman Admin App: login, generate voucher 1-100, download JPG.
+ ******************************************************************/-->
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Sistem Voucher</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+
+  <div class="appContainer">
+    <div class="appTitle">Admin Sistem Voucher</div>
+
+    <!-- LOGIN SECTION -->
+    <div id="loginSection">
+      <form id="loginForm">
+        <label class="formLabel" for="inputLoginUsername">Username</label>
+        <input class="formInput" type="text" id="inputLoginUsername" required />
+
+        <label class="formLabel" for="inputLoginPassword">Password</label>
+        <input class="formInput" type="password" id="inputLoginPassword" required />
+
+        <button class="formButton" type="submit">Login</button>
+      </form>
+      <div id="loginStatusMessage" class="statusMessage"></div>
+    </div>
+
+    <!-- DASHBOARD SECTION -->
+    <div id="dashboardSection" class="hiddenSection">
+      <p id="dashboardWelcomeText"></p>
+      <button id="buttonLogout" class="formButton secondaryButton" type="button">Logout</button>
+
+      <hr />
+
+      <form id="generateForm">
+        <label class="formLabel" for="selectVoucherType">Jenis Voucher</label>
+        <select class="formInput" id="selectVoucherType" required></select>
+
+        <label class="formLabel" for="inputRecipientName">Nama Penerima</label>
+        <input class="formInput" type="text" id="inputRecipientName" required />
+
+        <label class="formLabel" for="inputOrganization">Perusahaan/Sekolah (opsional)</label>
+        <input class="formInput" type="text" id="inputOrganization" />
+
+        <label class="formLabel" for="inputQuantity">Jumlah (1-100)</label>
+        <input class="formInput" type="number" id="inputQuantity" min="1" max="100" value="1" required />
+
+        <button class="formButton" type="submit">Generate Voucher</button>
+      </form>
+
+      <div id="generateStatusMessage" class="statusMessage"></div>
+      <div id="voucherResultList"></div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

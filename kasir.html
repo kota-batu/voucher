@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<!--*****************************************************************
+ * PROJECT      : Sistem Voucher V1
+ * MODULE       : Frontend / Kasir App
+ * FILE         : kasir.html
+ * VERSION      : v1.0.0
+ * AUTHOR       : Jimmy Method Team
+ * CREATED      : 2026-09-02
+ * LAST UPDATE  : 2026-09-02
+ *
+ * DESCRIPTION
+ * ----------------------------------------------------------------
+ * Halaman Kasir: cek dan pakai voucher. Tanpa login.
+ ******************************************************************/-->
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kasir - Sistem Voucher</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div class="appContainer">
+    <div class="appTitle">Kasir - Cek Voucher</div>
+
+    <form id="checkForm">
+      <label class="formLabel" for="inputIdentifier">Scan QR / Masukkan Nomor Seri</label>
+      <input class="formInput" type="text" id="inputIdentifier" required autofocus />
+
+      <button class="formButton" type="submit">Cek Voucher</button>
+    </form>
+
+    <div id="checkStatusMessage" class="statusMessage"></div>
+
+    <button id="buttonUseVoucher" class="formButton hiddenSection" type="button">
+      Gunakan Voucher
+    </button>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/kasir.js"></script>
+</body>
+</html>
