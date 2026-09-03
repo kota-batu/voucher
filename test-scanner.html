@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<!--*****************************************************************
+ * PROJECT      : Sistem Voucher V1
+ * MODULE       : Frontend / Test Page
+ * FILE         : test-scanner.html
+ * VERSION      : v1.0.0
+ * AUTHOR       : Jimmy Method Team
+ * CREATED      : 2026-09-03
+ * LAST UPDATE  : 2026-09-03
+ *
+ * DESCRIPTION
+ * ----------------------------------------------------------------
+ * Halaman diagnostik scanner QR. Menampilkan info teknis langsung
+ * di layar (resolusi kamera, jumlah frame diproses, error, hasil
+ * decode) supaya bisa didiagnosis tanpa perlu akses console HP.
+ * Hapus/jangan deploy file ini di versi produksi akhir.
+ ******************************************************************/-->
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test Scanner QR</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 500px; margin: 20px auto; padding: 0 10px; }
+    video { width: 100%; border: 2px solid #1565C0; border-radius: 6px; }
+    #debugInfo { background: #212121; color: #00FF00; font-family: monospace; font-size: 12px; padding: 10px; margin-top: 10px; white-space: pre-wrap; border-radius: 4px; min-height: 150px; }
+    button { padding: 12px 20px; margin-top: 10px; width: 100%; font-size: 15px; }
+    #resultBox { margin-top: 10px; padding: 10px; background: #E8F5E9; border-radius: 4px; display: none; word-break: break-all; }
+  </style>
+</head>
+<body>
+
+  <h3>Test Scanner QR (Diagnostik)</h3>
+  <button id="buttonStart">Mulai Kamera</button>
+
+  <video id="scannerVideo" playsinline muted></video>
+  <canvas id="scannerCanvasHidden" style="display:none;"></canvas>
+
+  <div id="resultBox"></div>
+  <div id="debugInfo">Menunggu kamera dimulai...</div>
+
+  <script src="js/jsQR.min.js"></script>
+  <script>
+    let frameCount = 0;
+    let decodeAttemptCount = 0;
+    let errorCount = 0;
+    let lastError = "-";
+    let cameraStream = null;
+
+    function updateDebugInfo(videoEl) {
+      const debugInfoElement = document.getElementById("debugInfo");
+      debugInfoElement.textContent =
+        "typeof jsQR: " + typeof window.jsQR + "\n" +
+        "videoWidth x videoHeight: " + videoEl.videoWidth + " x " + videoEl.videoHeight + "\n" +
+        "readyState: " + videoEl.readyState + " (butuh 4)\n" +
+        "Frame diproses: " + frameCount + "\n" +
+        "Percobaan decode: " + decodeAttemptCount + "\n" +
+        "Error tertangkap: " + errorCount + "\n" +
+        "Error terakhir: " + lastError;
+    }
+
+    async function startScanner() {
+      const videoElement = document.getElementById("scannerVideo");
+      const hiddenCanvasElement = document.getElementById("scannerCanvasHidden");
+
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        videoElement.srcObject = cameraStream;
+        await videoElement.play();
+      } catch (err) {
+        document.getElementById("debugInfo").textContent = "GAGAL BUKA KAMERA: " + err.message;
+        return;
+      }
+
+      function loop() {
+        frameCount++;
+
+        try {
+          if (videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
+            hiddenCanvasElement.width = videoElement.videoWidth;
+            hiddenCanvasElement.height = videoElement.videoHeight;
+            const ctx = hiddenCanvasElement.getContext("2d", { willReadFrequently: true });
+            ctx.drawImage(videoElement, 0, 0, hiddenCanvasElement.width, hiddenCanvasElement.height);
+
+            const imageData = ctx.getImageData(0, 0, hiddenCanvasElement.width, hiddenCanvasElement.height);
+            decodeAttemptCount++;
+
+            const result = window.jsQR(imageData.data, imageData.width, imageData.height);
+
+            if (result && result.data) {
+              const resultBoxElement = document.getElementById("resultBox");
+              resultBoxElement.style.display = "block";
+              resultBoxElement.textContent = "TERBACA: " + result.data;
+              updateDebugInfo(videoElement);
+              return;
+            }
+          }
+        } catch (err) {
+          errorCount++;
+          lastError = err.message;
+        }
+
+        updateDebugInfo(videoElement);
+        requestAnimationFrame(loop);
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    document.getElementById("buttonStart").addEventListener("click", startScanner);
+  </script>
+
+</body>
+</html>
