@@ -2,15 +2,16 @@
  * PROJECT      : Sistem Voucher V1
  * MODULE       : Frontend / Kasir App
  * FILE         : kasir.js
- * VERSION      : v1.0.0
+ * VERSION      : v1.1.0
  * AUTHOR       : Jimmy Method Team
  * CREATED      : 2026-09-02
- * LAST UPDATE  : 2026-09-02
+ * LAST UPDATE  : 2026-09-03
  *
  * DESCRIPTION
  * ----------------------------------------------------------------
  * Logika halaman Kasir: CHECK (lihat status voucher) dan USE
  * (pakai voucher). Tidak ada login, ID kasir diambil dari URL.
+ * Mendukung scan QR lewat kamera, dengan fallback input manual.
  ******************************************************************/
 
 /******************************************************************
@@ -19,6 +20,12 @@
  *
  * v1.0.0
  * - Initial Release.
+ *
+ * v1.1.0
+ * - Menambahkan fitur scan QR lewat kamera (jsQR), dengan fallback
+ *   input manual yang sudah ada sebelumnya.
+ * - Logika pengecekan voucher dipisah ke performVoucherCheck()
+ *   supaya bisa dipanggil dari form manual maupun hasil scan.
  *
  ******************************************************************/
 
@@ -29,6 +36,8 @@
  * Required
  * - config.js
  * - api.js
+ * - Library eksternal "jsQR" (window.jsQR), dimuat lewat file lokal
+ *   js/jsQR.min.js di kasir.html.
  *
  * Used By
  * - kasir.html
@@ -36,12 +45,18 @@
  ******************************************************************/
 
 /******************************************************************
+ * CONSTANTS
+ * ----------------------------------------------------------------
+ ******************************************************************/
+const SCANNER_CAMERA_FACING_MODE = "environment";
+
+/******************************************************************
  * STATE
  * ----------------------------------------------------------------
- * Menyimpan identifier terakhir yang dicek, supaya tombol "Gunakan
- * Voucher" tahu voucher mana yang harus dipakai.
  ******************************************************************/
 let lastCheckedIdentifier = "";
+let cameraStreamActive = null;
+let scannerAnimationFrameId = null;
 
 /******************************************************************
  * CASHIER ID
@@ -59,18 +74,139 @@ function getCashierIdFromUrl() {
 }
 
 /******************************************************************
+ * CAMERA SCANNER
+ * ----------------------------------------------------------------
+ ******************************************************************/
+
+/******************************************************************
+ * Function : startCameraScanner()
+ * Tujuan   : Mengaktifkan kamera perangkat dan mulai memindai QR
+ *            secara real-time dari video stream.
+ ******************************************************************/
+async function startCameraScanner() {
+  const videoElement = document.getElementById("scannerVideo");
+  const toggleButtonElement = document.getElementById("buttonToggleScanner");
+  const statusMessageElement = document.getElementById("checkStatusMessage");
+
+  try {
+    cameraStreamActive = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: SCANNER_CAMERA_FACING_MODE }
+    });
+
+    videoElement.srcObject = cameraStreamActive;
+    videoElement.style.display = "block";
+    await videoElement.play();
+
+    toggleButtonElement.textContent = "Tutup Kamera";
+    statusMessageElement.textContent = "Arahkan kamera ke QR voucher.";
+    statusMessageElement.className = "statusMessage";
+
+    scannerAnimationFrameId = requestAnimationFrame(scanVideoFrameLoop);
+  } catch (error) {
+    console.error("[START CAMERA SCANNER]", error);
+    statusMessageElement.textContent = "Kamera tidak bisa diakses. Gunakan input manual.";
+    statusMessageElement.className = "statusMessage statusError";
+  }
+}
+
+/******************************************************************
+ * Function : stopCameraScanner()
+ * Tujuan   : Menghentikan kamera dan proses pemindaian QR.
+ ******************************************************************/
+function stopCameraScanner() {
+  const videoElement = document.getElementById("scannerVideo");
+  const toggleButtonElement = document.getElementById("buttonToggleScanner");
+
+  if (scannerAnimationFrameId) {
+    cancelAnimationFrame(scannerAnimationFrameId);
+    scannerAnimationFrameId = null;
+  }
+
+  if (cameraStreamActive) {
+    cameraStreamActive.getTracks().forEach(function (track) {
+      track.stop();
+    });
+    cameraStreamActive = null;
+  }
+
+  videoElement.style.display = "none";
+  toggleButtonElement.textContent = "Buka Kamera / Scan QR";
+}
+
+/******************************************************************
+ * Function : handleToggleScannerButtonClick()
+ * Tujuan   : Membuka atau menutup kamera saat tombol ditekan.
+ ******************************************************************/
+function handleToggleScannerButtonClick() {
+  if (cameraStreamActive) {
+    stopCameraScanner();
+  } else {
+    startCameraScanner();
+  }
+}
+
+/******************************************************************
+ * Function : scanVideoFrameLoop()
+ * Tujuan   : Membaca frame video saat ini, mencoba mendekode QR
+ *            memakai jsQR, dan mengulang lewat requestAnimationFrame
+ *            selama kamera masih aktif.
+ ******************************************************************/
+function scanVideoFrameLoop() {
+  const videoElement = document.getElementById("scannerVideo");
+  const hiddenCanvasElement = document.getElementById("scannerCanvasHidden");
+
+  if (videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
+    hiddenCanvasElement.width = videoElement.videoWidth;
+    hiddenCanvasElement.height = videoElement.videoHeight;
+
+    const canvasContext = hiddenCanvasElement.getContext("2d");
+    canvasContext.drawImage(videoElement, 0, 0, hiddenCanvasElement.width, hiddenCanvasElement.height);
+
+    const imageData = canvasContext.getImageData(0, 0, hiddenCanvasElement.width, hiddenCanvasElement.height);
+    const decodedQrCode = window.jsQR(imageData.data, imageData.width, imageData.height);
+
+    if (decodedQrCode && decodedQrCode.data) {
+      handleQrCodeDetected(decodedQrCode.data);
+      return;
+    }
+  }
+
+  scannerAnimationFrameId = requestAnimationFrame(scanVideoFrameLoop);
+}
+
+/******************************************************************
+ * Function : handleQrCodeDetected()
+ * Tujuan   : Dipanggil saat QR berhasil terbaca oleh kamera.
+ *            Mengisi input manual, menutup kamera, lalu langsung
+ *            menjalankan pengecekan voucher.
+ ******************************************************************/
+function handleQrCodeDetected(qrValue) {
+  document.getElementById("inputIdentifier").value = qrValue;
+  stopCameraScanner();
+  performVoucherCheck(qrValue);
+}
+
+/******************************************************************
  * CHECK VOUCHER
  * ----------------------------------------------------------------
  ******************************************************************/
 
 /******************************************************************
  * Function : handleCheckFormSubmit()
- * Tujuan   : Mengecek status voucher berdasarkan input Kasir.
+ * Tujuan   : Mengecek status voucher dari input manual Kasir.
  ******************************************************************/
-async function handleCheckFormSubmit(submitEvent) {
+function handleCheckFormSubmit(submitEvent) {
   submitEvent.preventDefault();
-
   const identifier = document.getElementById("inputIdentifier").value.trim();
+  performVoucherCheck(identifier);
+}
+
+/******************************************************************
+ * Function : performVoucherCheck()
+ * Tujuan   : Logika inti pengecekan voucher, dipakai bersama oleh
+ *            form manual maupun hasil scan kamera.
+ ******************************************************************/
+async function performVoucherCheck(identifier) {
   const statusMessageElement = document.getElementById("checkStatusMessage");
   const useButtonElement = document.getElementById("buttonUseVoucher");
 
@@ -156,3 +292,4 @@ async function handleUseButtonClick() {
  ******************************************************************/
 document.getElementById("checkForm").addEventListener("submit", handleCheckFormSubmit);
 document.getElementById("buttonUseVoucher").addEventListener("click", handleUseButtonClick);
+document.getElementById("buttonToggleScanner").addEventListener("click", handleToggleScannerButtonClick);
