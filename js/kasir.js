@@ -2,7 +2,7 @@
  * PROJECT      : Sistem Voucher V1
  * MODULE       : Frontend / Kasir App
  * FILE         : kasir.js
- * VERSION      : v1.1.0
+ * VERSION      : v1.2.0
  * AUTHOR       : Jimmy Method Team
  * CREATED      : 2026-09-02
  * LAST UPDATE  : 2026-09-03
@@ -26,6 +26,15 @@
  *   input manual yang sudah ada sebelumnya.
  * - Logika pengecekan voucher dipisah ke performVoucherCheck()
  *   supaya bisa dipanggil dari form manual maupun hasil scan.
+ *
+ * v1.2.0
+ * - Memperbaiki bug: satu error tak tertangani di dalam loop scan
+ *   membuat proses pemindaian berhenti diam-diam. Sekarang loop
+ *   dibungkus try/catch dan tetap lanjut memindai walau ada error.
+ * - Meningkatkan resolusi kamera yang diminta (ideal 1280x720)
+ *   supaya QR lebih mudah terbaca.
+ * - Menambahkan opsi willReadFrequently pada Canvas Context untuk
+ *   performa pembacaan pixel yang lebih baik.
  *
  ******************************************************************/
 
@@ -90,7 +99,11 @@ async function startCameraScanner() {
 
   try {
     cameraStreamActive = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: SCANNER_CAMERA_FACING_MODE }
+      video: {
+        facingMode: SCANNER_CAMERA_FACING_MODE,
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      }
     });
 
     videoElement.srcObject = cameraStreamActive;
@@ -155,20 +168,24 @@ function scanVideoFrameLoop() {
   const videoElement = document.getElementById("scannerVideo");
   const hiddenCanvasElement = document.getElementById("scannerCanvasHidden");
 
-  if (videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
-    hiddenCanvasElement.width = videoElement.videoWidth;
-    hiddenCanvasElement.height = videoElement.videoHeight;
+  try {
+    if (videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
+      hiddenCanvasElement.width = videoElement.videoWidth;
+      hiddenCanvasElement.height = videoElement.videoHeight;
 
-    const canvasContext = hiddenCanvasElement.getContext("2d");
-    canvasContext.drawImage(videoElement, 0, 0, hiddenCanvasElement.width, hiddenCanvasElement.height);
+      const canvasContext = hiddenCanvasElement.getContext("2d", { willReadFrequently: true });
+      canvasContext.drawImage(videoElement, 0, 0, hiddenCanvasElement.width, hiddenCanvasElement.height);
 
-    const imageData = canvasContext.getImageData(0, 0, hiddenCanvasElement.width, hiddenCanvasElement.height);
-    const decodedQrCode = window.jsQR(imageData.data, imageData.width, imageData.height);
+      const imageData = canvasContext.getImageData(0, 0, hiddenCanvasElement.width, hiddenCanvasElement.height);
+      const decodedQrCode = window.jsQR(imageData.data, imageData.width, imageData.height);
 
-    if (decodedQrCode && decodedQrCode.data) {
-      handleQrCodeDetected(decodedQrCode.data);
-      return;
+      if (decodedQrCode && decodedQrCode.data) {
+        handleQrCodeDetected(decodedQrCode.data);
+        return;
+      }
     }
+  } catch (error) {
+    console.error("[SCAN QR FRAME]", error);
   }
 
   scannerAnimationFrameId = requestAnimationFrame(scanVideoFrameLoop);
