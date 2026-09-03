@@ -2,10 +2,10 @@
  * PROJECT      : Sistem Voucher V1
  * MODULE       : Frontend / Configuration
  * FILE         : config.js
- * VERSION      : v1.0.0
+ * VERSION      : v1.1.0
  * AUTHOR       : Jimmy Method Team
  * CREATED      : 2026-09-02
- * LAST UPDATE  : 2026-09-02
+ * LAST UPDATE  : 2026-09-03
  *
  * DESCRIPTION
  * ----------------------------------------------------------------
@@ -21,6 +21,11 @@
  * v1.0.0
  * - Initial Release.
  * - Menambahkan layout template "OLEHOLEH".
+ *
+ * v1.1.0
+ * - Menambahkan GENERATOR_TOKEN_OLEHOLEH untuk halaman
+ *   generate-oleholeh.html (token generator ditanam di kode,
+ *   tidak lagi lewat parameter URL ?token=).
  *
  ******************************************************************/
 
@@ -77,3 +82,12 @@ const TEMPLATE_LAYOUTS = {
     expired:   { w: 592, h: 96,  cx: 413.00, cy: 686.00, color: RENDER_TEXT_COLOR_RED,   bold: true }
   }
 };
+
+/******************************************************************
+ * GENERATOR TOKENS
+ * ----------------------------------------------------------------
+ * Token Generator (dari sheet GENERATORS) untuk halaman generate
+ * khusus per jenis voucher. GANTI nilai ini sesuai TOKEN yang ada
+ * di sheet GENERATORS kamu.
+ ******************************************************************/
+const GENERATOR_TOKEN_OLEHOLEH = "GEN-OLEHOLEH-01";
