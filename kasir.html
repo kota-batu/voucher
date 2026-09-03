@@ -3,14 +3,15 @@
  * PROJECT      : Sistem Voucher V1
  * MODULE       : Frontend / Kasir App
  * FILE         : kasir.html
- * VERSION      : v1.0.0
+ * VERSION      : v1.1.0
  * AUTHOR       : Jimmy Method Team
  * CREATED      : 2026-09-02
- * LAST UPDATE  : 2026-09-02
+ * LAST UPDATE  : 2026-09-03
  *
  * DESCRIPTION
  * ----------------------------------------------------------------
- * Halaman Kasir: cek dan pakai voucher. Tanpa login.
+ * Halaman Kasir: cek dan pakai voucher. Tanpa login. Mendukung
+ * scan QR lewat kamera perangkat, dengan fallback input manual.
  ******************************************************************/-->
 <html lang="id">
 <head>
@@ -24,8 +25,15 @@
   <div class="appContainer">
     <div class="appTitle">Kasir - Cek Voucher</div>
 
+    <button id="buttonToggleScanner" class="formButton secondaryButton" type="button">
+      Buka Kamera / Scan QR
+    </button>
+
+    <video id="scannerVideo" style="width:100%; border-radius:6px; margin-top:10px; display:none;" playsinline muted></video>
+    <canvas id="scannerCanvasHidden" style="display:none;"></canvas>
+
     <form id="checkForm">
-      <label class="formLabel" for="inputIdentifier">Scan QR / Masukkan Nomor Seri</label>
+      <label class="formLabel" for="inputIdentifier">Atau masukkan Nomor Seri manual</label>
       <input class="formInput" type="text" id="inputIdentifier" required autofocus />
 
       <button class="formButton" type="submit">Cek Voucher</button>
@@ -38,6 +46,7 @@
     </button>
   </div>
 
+  <script src="js/jsQR.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/kasir.js"></script>
